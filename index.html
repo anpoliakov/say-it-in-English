@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Say it in English</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg:          #f4f1ec;
+      --surface:     #ffffff;
+      --surface-2:   #f9f7f4;
+      --border:      rgba(0,0,0,0.08);
+      --text:        #1a1a1a;
+      --text-muted:  #6b6b6b;
+      --primary:     #2d7a5f;
+      --primary-light: #e8f4ef;
+      --accent:      #e86f3a;
+      --accent-light: #fdf0ea;
+      --tile-bg:     #ffffff;
+      --tile-border: rgba(0,0,0,0.10);
+      --tile-selected: #2d7a5f;
+      --tile-sel-text: #ffffff;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.10);
+      --radius:      10px;
+      --radius-sm:   6px;
+      --radius-full: 999px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ---- LAYOUT ---- */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 12px 8px;
+      gap: 10px;
+    }
+
+    /* ---- HEADER ---- */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .header-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: -0.3px;
+    }
+    .score-block {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score-label { font-size: 12px; color: var(--text-muted); }
+    .score-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent);
+      min-width: 36px;
+      text-align: right;
+    }
+
+    /* ---- TASK CARD ---- */
+    .task-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .task-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+    }
+    .task-word {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .task-translation {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .task-hint {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--primary);
+    }
+
+    /* ---- STATUS BAR (selected letters) ---- */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      min-height: 42px;
+    }
+    .selected-word {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--primary);
+      min-height: 26px;
+    }
+    .selected-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .selected-count span {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ---- GRID WRAPPER ---- */
+    .grid-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* SVG for connection lines */
+    .grid-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ---- GRID ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    .tile {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--tile-bg);
+      border: 1.5px solid var(--tile-border);
+      border-radius: var(--radius-sm);
+      font-size: clamp(10px, 2.8vw, 16px);
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      touch-action: none;
+    }
+
+    .tile.selected {
+      background: var(--tile-selected);
+      color: var(--tile-sel-text);
+      border-color: var(--primary);
+      transform: scale(0.93);
+      box-shadow: 0 0 0 2px rgba(45,122,95,0.25);
+    }
+
+    .tile.first-selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .tile.hover-candidate {
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    /* Burst animation */
+    @keyframes burst {
+      0%   { transform: scale(1); opacity: 1; }
+      30%  { transform: scale(1.25) rotate(var(--rot, 5deg)); opacity: 0.8; }
+      100% { transform: scale(0) rotate(var(--rot, 5deg)) translateY(-20px); opacity: 0; }
+    }
+    @keyframes particle {
+      0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--px), var(--py)) scale(0); opacity: 0; }
+    }
+
+    .tile.bursting {
+      animation: burst 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: fixed;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 999;
+      animation: particle 0.6s ease-out forwards;
+    }
+
+    /* Score pop */
+    @keyframes scorePop {
+      0%   { transform: translateY(0) scale(1); opacity: 1; }
+      60%  { transform: translateY(-28px) scale(1.2); opacity: 1; }
+      100% { transform: translateY(-48px) scale(0.8); opacity: 0; }
+    }
+    .score-pop {
+      position: fixed;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--accent);
+      pointer-events: none;
+      z-index: 1000;
+      animation: scorePop 0.7s ease-out forwards;
+    }
+
+    /* ---- BOTTOM BUTTONS ---- */
+    .bottom-bar {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-danger {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">🇬🇧 Say it in English</div>
+    <div class="score-block">
+      <span class="score-label">Score</span>
+      <span class="score-value" id="scoreVal">0</span>
+    </div>
+  </div>
+
+  <!-- TASK CARD -->
+  <div class="task-card">
+    <div class="task-label">Find any 5 letters</div>
+    <div class="task-word" id="taskWord">DEMO MODE</div>
+    <div class="task-translation" id="taskTranslation">Select 5 consecutive letters on the field</div>
+    <div class="task-hint" id="taskHint">💡 Swipe your finger across the grid</div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="selected-word" id="selectedWord">_ _ _ _ _</div>
+    <div class="selected-count">Selected: <span id="selCount">0</span> / 5</div>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid-wrapper">
+    <svg class="grid-svg" id="lineSvg"></svg>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- BOTTOM BUTTONS -->
+  <div class="bottom-bar">
+    <button class="btn btn-ghost" onclick="clearSelection()">✕ Clear</button>
+    <button class="btn btn-primary" onclick="submitWord()">✓ Confirm</button>
+    <button class="btn btn-danger" onclick="shuffleGrid()">⟳ Shuffle</button>
+  </div>
+
+</div>
+
+<script>
+// ---- Telegram WebApp init ----
+if (window.Telegram && window.Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+// ---- Constants ----
+const GRID_SIZE = 10;
+const SELECT_REQUIRED = 5;
+const LETTERS = 'ABCDEFGHIJKLMNOPRSTUVWY';
+const PARTICLE_COLORS = ['#2d7a5f','#e86f3a','#f5c842','#5b9cf6','#e84393','#43c59e'];
+
+// ---- State ----
+let tiles = [];       // Array of {el, letter, row, col, removed}
+let selected = [];    // indices of selected tiles
+let isPointerDown = false;
+let score = 0;
+
+// ---- Init grid ----
+function buildGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  tiles = [];
+
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+      const el = document.createElement('div');
+      el.className = 'tile';
+      el.textContent = letter;
+      el.dataset.idx = tiles.length;
+
+      // Touch events
+      el.addEventListener('pointerdown', onTilePointerDown, { passive: true });
+      el.addEventListener('pointerenter', onTilePointerEnter, { passive: true });
+
+      grid.appendChild(el);
+      tiles.push({ el, letter, row: r, col: c, removed: false });
+    }
+  }
+}
+
+// ---- Pointer events ----
+document.addEventListener('pointerup', () => {
+  isPointerDown = false;
+});
+document.addEventListener('pointercancel', () => {
+  isPointerDown = false;
+  clearSelection();
+});
+
+function onTilePointerDown(e) {
+  isPointerDown = true;
+  const idx = +e.currentTarget.dataset.idx;
+  if (tiles[idx].removed) return;
+  clearSelection();
+  toggleSelect(idx);
+}
+
+function onTilePointerEnter(e) {
+  if (!isPointerDown) return;
+  const idx = +e.currentTarget.dataset.idx;
+  if (tiles[idx].removed) return;
+  if (selected.includes(idx)) return;
+  if (selected.length >= SELECT_REQUIRED) return;
+
+  // Must be adjacent to last selected
+  if (selected.length > 0) {
+    const last = tiles[selected[selected.length - 1]];
+    const cur  = tiles[idx];
+    const dr = Math.abs(last.row - cur.row);
+    const dc = Math.abs(last.col - cur.col);
+    if (dr > 1 || dc > 1) return;
+  }
+
+  toggleSelect(idx);
+}
+
+function toggleSelect(idx) {
+  selected.push(idx);
+  const tile = tiles[idx];
+  tile.el.classList.add('selected');
+  if (selected.length === 1) tile.el.classList.add('first-selected');
+  updateStatus();
+  drawLines();
+
+  if (selected.length === SELECT_REQUIRED) {
+    // Auto-submit after short delay
+    setTimeout(submitWord, 350);
+  }
+}
+
+function clearSelection() {
+  selected.forEach(idx => {
+    tiles[idx].el.classList.remove('selected', 'first-selected', 'hover-candidate');
+  });
+  selected = [];
+  updateStatus();
+  drawLines();
+}
+
+// ---- Status display ----
+function updateStatus() {
+  const sw = document.getElementById('selectedWord');
+  const sc = document.getElementById('selCount');
+  sc.textContent = selected.length;
+
+  if (selected.length === 0) {
+    sw.textContent = '_ _ _ _ _';
+    sw.style.color = 'var(--text-muted)';
+  } else {
+    const letters = selected.map(i => tiles[i].letter).join(' ');
+    sw.textContent = letters;
+    sw.style.color = 'var(--primary)';
+  }
+}
+
+// ---- SVG lines ----
+function drawLines() {
+  const svg = document.getElementById('lineSvg');
+  svg.innerHTML = '';
+  if (selected.length < 2) return;
+
+  const gridEl = document.getElementById('grid');
+  const gridRect = gridEl.getBoundingClientRect();
+
+  const pts = selected.map(idx => {
+    const r = tiles[idx].el.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2 - gridRect.left,
+      y: r.top + r.height / 2 - gridRect.top
+    };
+  });
+
+  // Background stroke (white)
+  const polyBg = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  polyBg.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+  polyBg.setAttribute('fill','none');
+  polyBg.setAttribute('stroke','rgba(255,255,255,0.9)');
+  polyBg.setAttribute('stroke-width','5');
+  polyBg.setAttribute('stroke-linecap','round');
+  polyBg.setAttribute('stroke-linejoin','round');
+  svg.appendChild(polyBg);
+
+  // Foreground stroke (primary)
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+  poly.setAttribute('fill','none');
+  poly.setAttribute('stroke','var(--primary)');
+  poly.setAttribute('stroke-width','2.5');
+  poly.setAttribute('stroke-linecap','round');
+  poly.setAttribute('stroke-linejoin','round');
+  poly.setAttribute('stroke-dasharray','1');
+  svg.appendChild(poly);
+}
+
+// ---- Submit word ----
+function submitWord() {
+  if (selected.length < SELECT_REQUIRED) {
+    if (selected.length === 0) return;
+    // Not enough — visual shake feedback
+    selected.forEach(idx => {
+      tiles[idx].el.style.animation = 'none';
+      setTimeout(() => tiles[idx].el.style.animation = '', 10);
+    });
+    return;
+  }
+
+  const burstIndices = [...selected];
+  clearSelection();
+
+  // Get center positions before burst for particles
+  const positions = burstIndices.map(idx => {
+    const r = tiles[idx].el.getBoundingClientRect();
+    return { x: r.left + r.width/2, y: r.top + r.height/2 };
+  });
+
+  // Burst tiles
+  burstIndices.forEach((idx, i) => {
+    const tile = tiles[idx];
+    const rot = (Math.random() * 30 - 15) + 'deg';
+    tile.el.style.setProperty('--rot', rot);
+    tile.el.classList.add('bursting');
+    tile.removed = true;
+
+    // After animation, replace with new letter
+    setTimeout(() => {
+      tile.letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+      tile.el.textContent = tile.letter;
+      tile.el.classList.remove('bursting', 'selected', 'first-selected');
+      tile.el.style.removeProperty('--rot');
+      tile.removed = false;
+
+      // Fade-in new tile
+      tile.el.style.opacity = '0';
+      tile.el.style.transform = 'scale(0.5)';
+      requestAnimationFrame(() => {
+        tile.el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        tile.el.style.opacity = '1';
+        tile.el.style.transform = 'scale(1)';
+        setTimeout(() => tile.el.style.transition = '', 300);
+      });
+    }, 450);
+
+    // Spawn particles
+    spawnParticles(positions[i].x, positions[i].y);
+  });
+
+  // Score
+  score += SELECT_REQUIRED * 10;
+  document.getElementById('scoreVal').textContent = score;
+  spawnScorePop(positions[Math.floor(positions.length/2)], `+${SELECT_REQUIRED * 10}`);
+
+  if (window.Telegram && window.Telegram.WebApp) {
+    Telegram.WebApp.HapticFeedback && Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+  }
+}
+
+// ---- Particles ----
+function spawnParticles(cx, cy) {
+  const count = 10;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+    const dist  = 30 + Math.random() * 40;
+    const px = Math.cos(angle) * dist + 'px';
+    const py = Math.sin(angle) * dist + 'px';
+    p.style.cssText = `
+      left: ${cx - 3.5}px;
+      top: ${cy - 3.5}px;
+      background: ${PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)]};
+      --px: ${px};
+      --py: ${py};
+      animation-delay: ${Math.random() * 60}ms;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+// ---- Score pop ----
+function spawnScorePop(pos, text) {
+  const el = document.createElement('div');
+  el.className = 'score-pop';
+  el.textContent = text;
+  el.style.left = pos.x + 'px';
+  el.style.top  = pos.y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// ---- Shuffle ----
+function shuffleGrid() {
+  clearSelection();
+  tiles.forEach(tile => {
+    tile.letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+    tile.el.textContent = tile.letter;
+    tile.removed = false;
+    tile.el.classList.remove('bursting');
+    tile.el.style.opacity = '0';
+    tile.el.style.transform = 'scale(0.6)';
+  });
+  requestAnimationFrame(() => {
+    tiles.forEach((tile, i) => {
+      setTimeout(() => {
+        tile.el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        tile.el.style.opacity = '1';
+        tile.el.style.transform = 'scale(1)';
+        setTimeout(() => tile.el.style.transition = '', 250);
+      }, i * 4);
+    });
+  });
+}
+
+// ---- Start ----
+buildGrid();
+</script>
+</body>
+</html>
