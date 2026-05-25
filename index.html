@@ -36,8 +36,8 @@
       height: 100dvh;
       max-width: 480px;
       margin: 0 auto;
-      padding: 14px 14px 10px;
-      gap: 12px;
+      padding: 12px 14px 12px;
+      gap: 10px;
     }
 
     /* HEADER */
@@ -49,6 +49,7 @@
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
     }
     .header-title { font-size: 15px; font-weight: 700; color: var(--primary); }
     .score-block  { display: flex; align-items: center; gap: 6px; }
@@ -59,11 +60,12 @@
     .task-card {
       background: var(--surface);
       border-radius: var(--radius);
-      padding: 12px 16px;
+      padding: 10px 16px;
       box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
     }
     .task-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text-muted); }
-    .task-word  { font-size: 22px; font-weight: 800; color: var(--text); margin: 2px 0; }
+    .task-word  { font-size: 20px; font-weight: 800; color: var(--text); margin: 2px 0; }
     .task-hint  { font-size: 12px; color: var(--primary); }
 
     /* STATUS */
@@ -71,22 +73,26 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 16px;
+      padding: 8px 16px;
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
     }
-    .selected-word  { font-size: 22px; font-weight: 800; letter-spacing: 4px; color: var(--primary); min-height: 28px; }
+    .selected-word  { font-size: 20px; font-weight: 800; letter-spacing: 4px; color: var(--primary); min-height: 26px; }
     .selected-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .selected-count span { font-weight: 700; color: var(--accent); }
 
     /* GRID AREA */
     .grid-area {
       flex: 1;
+      min-height: 0;          /* ключевое — не даёт расти за пределы flex */
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
       position: relative;
+      overflow: hidden;
     }
 
     .grid-svg {
@@ -98,7 +104,7 @@
       height: 100%;
     }
 
-    /* Grid: 5 columns, square cells */
+    /* Grid: 5 columns */
     #grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -107,6 +113,8 @@
       touch-action: none;
       position: relative;
       z-index: 2;
+      /* не растягиваем на весь flex — грид занимает только нужную высоту */
+      align-self: flex-start;
     }
 
     .tile {
@@ -117,7 +125,7 @@
       background: #fff;
       border: 2px solid rgba(0,0,0,.09);
       border-radius: var(--radius-sm);
-      font-size: clamp(16px, 6vw, 28px);
+      font-size: clamp(16px, 6vw, 26px);
       font-weight: 800;
       color: var(--text);
       box-shadow: var(--shadow-sm);
@@ -136,7 +144,6 @@
       background: #1d5c45;
       border-color: #1d5c45;
     }
-    /* placeholder — empty cell to keep grid shape */
     .tile.empty {
       background: transparent;
       border-color: transparent;
@@ -144,7 +151,6 @@
       pointer-events: none;
     }
 
-    /* burst */
     @keyframes burst {
       0%   { transform: scale(1);   opacity: 1; }
       30%  { transform: scale(1.35) rotate(var(--rot,6deg)); opacity: .85; }
@@ -156,12 +162,6 @@
       z-index: 10;
     }
 
-    /* fall animation for tiles dropping down */
-    .tile.falling {
-      transition: transform .3s cubic-bezier(.4,0,.2,1) !important;
-    }
-
-    /* particle */
     @keyframes particle {
       0%   { transform: translate(0,0) scale(1); opacity: 1; }
       100% { transform: translate(var(--px),var(--py)) scale(0); opacity: 0; }
@@ -172,7 +172,6 @@
       animation: particle .55s ease-out forwards;
     }
 
-    /* score pop */
     @keyframes scorePop {
       0%   { transform: translateY(0) scale(1);   opacity: 1; }
       55%  { transform: translateY(-30px) scale(1.2); opacity: 1; }
@@ -184,7 +183,6 @@
       animation: scorePop .7s ease-out forwards;
     }
 
-    /* empty state */
     .empty-state {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
@@ -199,7 +197,7 @@
     .empty-state p  { font-size: 13px; color: var(--text-muted); }
 
     /* BUTTONS */
-    .bottom-bar { display: flex; gap: 8px; }
+    .bottom-bar { display: flex; gap: 8px; flex-shrink: 0; }
     .btn {
       flex: 1; padding: 11px 8px;
       border: none; border-radius: var(--radius);
@@ -261,7 +259,6 @@ const NEED    = 5;
 const LETTERS = 'ABCDEFGHIJKLMNOPRSTUVWY';
 const COLORS  = ['#2d7a5f','#e86f3a','#f5c842','#5b9cf6','#e84393','#43c59e'];
 
-// grid[r][c] = { el, letter } | null
 let grid      = [];
 let selected  = [];
 let isDragging = false;
@@ -269,11 +266,10 @@ let score     = 0;
 let busy      = false;
 let remaining = ROWS * COLS;
 
-const gridEl    = document.getElementById('grid');
-const svgEl     = document.getElementById('lineSvg');
-const emptyEl   = document.getElementById('emptyState');
+const gridEl  = document.getElementById('grid');
+const svgEl   = document.getElementById('lineSvg');
+const emptyEl = document.getElementById('emptyState');
 
-// ─── HELPERS ────────────────────────────────────────────────────
 function rndLetter() { return LETTERS[Math.floor(Math.random() * LETTERS.length)]; }
 
 function makeTile(letter, r, c) {
@@ -293,13 +289,11 @@ function makeEmpty(r, c) {
   return el;
 }
 
-// ─── BUILD ─────────────────────────────────────────────────────────
 function buildGrid() {
   gridEl.innerHTML = '';
   grid = [];
   remaining = ROWS * COLS;
   emptyEl.classList.remove('visible');
-
   for (let r = 0; r < ROWS; r++) {
     grid[r] = [];
     for (let c = 0; c < COLS; c++) {
@@ -318,9 +312,7 @@ function newGame() {
   buildGrid();
 }
 
-// ─── EVENTS ─────────────────────────────────────────────────────────
 function attachEvents() {
-  // mouse
   gridEl.addEventListener('mousedown', e => {
     if (busy) return;
     const t = e.target.closest('.tile:not(.empty)');
@@ -337,7 +329,6 @@ function attachEvents() {
   });
   document.addEventListener('mouseup', () => { isDragging = false; });
 
-  // touch
   gridEl.addEventListener('touchstart', e => {
     if (busy) return;
     e.preventDefault();
@@ -362,7 +353,6 @@ function fromPoint(touch) {
   if (t) trySelect(+t.dataset.r, +t.dataset.c);
 }
 
-// ─── SELECTION ─────────────────────────────────────────────────────
 function trySelect(r, c) {
   if (!grid[r] || !grid[r][c]) return;
   if (selected.some(s => s.r === r && s.c === c)) return;
@@ -390,7 +380,6 @@ function clearSelection() {
   drawLines();
 }
 
-// ─── STATUS ─────────────────────────────────────────────────────────
 function updateStatus() {
   const sw = document.getElementById('selectedWord');
   document.getElementById('selCount').textContent = selected.length;
@@ -403,7 +392,6 @@ function updateStatus() {
   }
 }
 
-// ─── SVG LINES ─────────────────────────────────────────────────────
 function drawLines() {
   svgEl.innerHTML = '';
   if (selected.length < 2) return;
@@ -425,7 +413,6 @@ function drawLines() {
   });
 }
 
-// ─── SUBMIT ─────────────────────────────────────────────────────────
 function submitWord() {
   if (selected.length < NEED || busy) return;
   busy = true;
@@ -438,7 +425,6 @@ function submitWord() {
 
   clearSelection();
 
-  // burst each tile
   toRemove.forEach(({ r, c }, i) => {
     const cell = grid[r][c];
     cell.el.style.setProperty('--rot', (Math.random() * 28 - 14) + 'deg');
@@ -448,57 +434,44 @@ function submitWord() {
     remaining--;
   });
 
-  // score
   score += NEED * 10;
   document.getElementById('scoreVal').textContent = score;
   spawnScorePop(positions[Math.floor(positions.length / 2)], `+${NEED * 10}`);
   if (window.Telegram?.WebApp?.HapticFeedback)
     Telegram.WebApp.HapticFeedback.impactOccurred('medium');
 
-  // after burst anim — apply gravity, replace bursted with empty placeholders
   setTimeout(() => {
-    // remove burst DOM nodes, insert empty placeholders
     toRemove.forEach(({ r, c }) => {
       const burstedEl = gridEl.querySelector(`.tile.bursting[data-r="${r}"][data-c="${c}"]`);
       if (burstedEl) burstedEl.remove();
       const ph = makeEmpty(r, c);
-      // insert at correct position
       grid[r][c] = { el: ph, letter: null, empty: true };
-      // find where to insert in DOM (before the tile at r*COLS+c+1)
       insertTileAt(ph, r, c);
     });
-
     applyGravity();
   }, 400);
 }
 
-// insert tile el at correct grid position in DOM
 function insertTileAt(el, r, c) {
-  // find first tile that comes AFTER position (r,c) in reading order
   const allTiles = Array.from(gridEl.querySelectorAll('.tile'));
   const pos = r * COLS + c;
-  // find tile whose logical position > pos
   let refNode = null;
   for (const t of allTiles) {
     const tp = (+t.dataset.r) * COLS + (+t.dataset.c);
     if (tp > pos) { refNode = t; break; }
   }
-  gridEl.insertBefore(el, refNode); // insertBefore(el, null) = appendChild
+  gridEl.insertBefore(el, refNode);
 }
 
-// ─── GRAVITY ─────────────────────────────────────────────────────────
-// Tiles in each column fall down into empty slots
 function applyGravity() {
-  // get tile height for translateY calc
   let tileH = 0;
   outer: for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++) {
       const cell = grid[r][c];
       if (cell && !cell.empty) { tileH = cell.el.getBoundingClientRect().height; break outer; }
     }
-  const gap = 8; // matches CSS gap
+  const gap  = 8;
   const step = tileH + gap;
-
   let maxDelay = 0;
 
   for (let c = 0; c < COLS; c++) {
@@ -507,24 +480,22 @@ function applyGravity() {
       const cell = grid[r][c];
       if (cell && !cell.empty) {
         if (r !== writeRow) {
-          // move logically
           grid[writeRow][c] = cell;
           grid[r][c] = { el: makeEmpty(r, c), letter: null, empty: true };
           insertTileAt(grid[r][c].el, r, c);
 
           const fallDist = writeRow - r;
-          const dy = fallDist * step;
-          const dur = 0.18 + fallDist * 0.07;
+          const dy    = fallDist * step;
+          const dur   = 0.18 + fallDist * 0.07;
           const delay = fallDist * 30;
           maxDelay = Math.max(maxDelay, delay + dur * 1000);
 
           cell.el.dataset.r = writeRow;
           cell.el.dataset.c = c;
 
-          // animate
           cell.el.style.transition = 'none';
           cell.el.style.transform  = 'translateY(0px)';
-          cell.el.getBoundingClientRect(); // reflow
+          cell.el.getBoundingClientRect();
           cell.el.style.transition = `transform ${dur}s cubic-bezier(.4,0,.2,1) ${delay}ms`;
           cell.el.style.transform  = `translateY(${dy}px)`;
 
@@ -537,20 +508,15 @@ function applyGravity() {
         writeRow--;
       }
     }
-    // remaining top rows stay as empty placeholders (already placed)
   }
 
-  const finishDelay = maxDelay + 80;
   setTimeout(() => {
     reorderDOM();
     busy = false;
-    if (remaining <= 0) {
-      setTimeout(() => emptyEl.classList.add('visible'), 200);
-    }
-  }, finishDelay);
+    if (remaining <= 0) setTimeout(() => emptyEl.classList.add('visible'), 200);
+  }, maxDelay + 80);
 }
 
-// Reorder DOM to match grid reading order
 function reorderDOM() {
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++) {
@@ -563,7 +529,6 @@ function reorderDOM() {
     }
 }
 
-// ─── PARTICLES ─────────────────────────────────────────────────────
 function spawnParticles(cx, cy) {
   for (let i = 0; i < 10; i++) {
     const p = document.createElement('div');
@@ -579,7 +544,6 @@ function spawnParticles(cx, cy) {
   }
 }
 
-// ─── SCORE POP ─────────────────────────────────────────────────────
 function spawnScorePop(pos, text) {
   const el = document.createElement('div');
   el.className   = 'score-pop';
