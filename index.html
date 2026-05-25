@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -9,22 +9,17 @@
     :root {
       --bg:            #f4f1ec;
       --surface:       #ffffff;
-      --border:        rgba(0,0,0,0.08);
       --text:          #1a1a1a;
       --text-muted:    #6b6b6b;
       --primary:       #2d7a5f;
       --primary-light: #e8f4ef;
       --accent:        #e86f3a;
       --accent-light:  #fdf0ea;
-      --tile-bg:       #ffffff;
-      --tile-border:   rgba(0,0,0,0.10);
       --shadow-sm:     0 1px 3px rgba(0,0,0,0.08);
       --radius:        10px;
       --radius-sm:     6px;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html, body {
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -36,7 +31,6 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: none;
     }
-
     .app {
       display: flex;
       flex-direction: column;
@@ -58,25 +52,22 @@
       box-shadow: var(--shadow-sm);
     }
     .header-title { font-size: 15px; font-weight: 700; color: var(--primary); }
+    .score-block  { display: flex; align-items: center; gap: 6px; }
     .score-label  { font-size: 12px; color: var(--text-muted); }
     .score-value  { font-size: 18px; font-weight: 800; color: var(--accent); min-width: 36px; text-align: right; }
-    .score-block  { display: flex; align-items: center; gap: 6px; }
 
-    /* TASK CARD */
+    /* TASK */
     .task-card {
       background: var(--surface);
       border-radius: var(--radius);
       padding: 12px 16px;
       box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
     }
-    .task-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); }
+    .task-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text-muted); }
     .task-word  { font-size: 22px; font-weight: 800; color: var(--text); }
-    .task-hint  { font-size: 12px; color: var(--primary); }
+    .task-hint  { font-size: 12px; color: var(--primary); margin-top: 4px; }
 
-    /* STATUS BAR */
+    /* STATUS */
     .status-bar {
       display: flex;
       align-items: center;
@@ -91,78 +82,84 @@
     .selected-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .selected-count span { font-weight: 700; color: var(--accent); }
 
-    /* GRID WRAPPER */
+    /* GRID WRAPPER — clips overflowing tiles spawning from top */
     .grid-wrapper {
       flex: 1;
       position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       overflow: hidden;
     }
 
-    .grid-svg {
+    /* The actual grid is absolutely positioned and sized by JS */
+    #grid {
       position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .grid {
+      bottom: 0;
+      left: 0;
+      right: 0;
       display: grid;
       grid-template-columns: repeat(10, 1fr);
       gap: 4px;
-      width: 100%;
-      position: relative;
-      z-index: 2;
       touch-action: none;
     }
 
+    /* SVG lines overlay */
+    .grid-svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* TILE */
     .tile {
       aspect-ratio: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--tile-bg);
-      border: 1.5px solid var(--tile-border);
+      background: #fff;
+      border: 1.5px solid rgba(0,0,0,.10);
       border-radius: var(--radius-sm);
       font-size: clamp(10px, 2.8vw, 16px);
       font-weight: 700;
       color: var(--text);
       box-shadow: var(--shadow-sm);
       position: relative;
-      transition: background 0.1s, color 0.1s, transform 0.1s, border-color 0.1s;
-      touch-action: none;
+      z-index: 2;
+      /* fall transition */
+      transition: transform 0.32s cubic-bezier(.4,0,.2,1),
+                  background 0.1s, color 0.1s, border-color 0.1s, opacity 0.1s;
+      will-change: transform;
     }
-
     .tile.selected {
       background: var(--primary);
       color: #fff;
       border-color: var(--primary);
       transform: scale(0.91);
-      box-shadow: 0 0 0 2px rgba(45,122,95,0.3);
+      box-shadow: 0 0 0 2px rgba(45,122,95,.3);
     }
+    .tile.first-sel { background: #1d5c45; }
 
-    .tile.first-sel {
-      background: #1d5c45;
-      color: #fff;
-      border-color: #1d5c45;
-    }
-
-    /* Burst */
+    /* burst */
     @keyframes burst {
-      0%   { transform: scale(1); opacity: 1; }
-      35%  { transform: scale(1.3) rotate(var(--rot,6deg)); opacity: 0.9; }
-      100% { transform: scale(0) rotate(var(--rot,6deg)) translateY(-18px); opacity: 0; }
+      0%   { transform: scale(1);   opacity: 1; }
+      35%  { transform: scale(1.3) rotate(var(--rot,6deg)); opacity: .9; }
+      100% { transform: scale(0)   rotate(var(--rot,6deg)) translateY(-16px); opacity: 0; }
     }
     .tile.bursting {
-      animation: burst 0.42s cubic-bezier(0.36,0.07,0.19,0.97) forwards;
+      animation: burst .4s cubic-bezier(.36,.07,.19,.97) forwards;
       pointer-events: none;
+      z-index: 4;
     }
 
-    /* Particle */
+    /* new tile drop-in from above */
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-24px) scale(.7); }
+      to   { opacity: 1; transform: translateY(0)     scale(1);  }
+    }
+    .tile.drop-in {
+      animation: dropIn .35s cubic-bezier(.4,0,.2,1) forwards;
+    }
+
+    /* particle */
     @keyframes particle {
       0%   { transform: translate(0,0) scale(1); opacity: 1; }
       100% { transform: translate(var(--px),var(--py)) scale(0); opacity: 0; }
@@ -173,45 +170,40 @@
       border-radius: 50%;
       pointer-events: none;
       z-index: 999;
-      animation: particle 0.55s ease-out forwards;
+      animation: particle .55s ease-out forwards;
     }
 
-    /* Score pop */
+    /* score pop */
     @keyframes scorePop {
-      0%   { transform: translateY(0) scale(1); opacity: 1; }
+      0%   { transform: translateY(0) scale(1);   opacity: 1; }
       60%  { transform: translateY(-28px) scale(1.2); opacity: 1; }
-      100% { transform: translateY(-50px) scale(0.8); opacity: 0; }
+      100% { transform: translateY(-50px) scale(.8);  opacity: 0; }
     }
     .score-pop {
       position: fixed;
-      font-size: 18px;
-      font-weight: 900;
+      font-size: 18px; font-weight: 900;
       color: var(--accent);
       pointer-events: none;
       z-index: 1000;
-      animation: scorePop 0.7s ease-out forwards;
+      animation: scorePop .7s ease-out forwards;
     }
 
     /* BUTTONS */
     .bottom-bar { display: flex; gap: 8px; }
     .btn {
-      flex: 1;
-      padding: 10px 8px;
-      border: none;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 600;
+      flex: 1; padding: 10px 8px;
+      border: none; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: opacity .15s, transform .1s;
     }
-    .btn:active { transform: scale(0.95); }
-    .btn-primary { background: var(--primary); color: white; }
+    .btn:active { transform: scale(.95); }
+    .btn-primary { background: var(--primary); color: #fff; }
     .btn-ghost   { background: var(--surface); color: var(--text-muted); box-shadow: var(--shadow-sm); }
     .btn-danger  { background: var(--accent-light); color: var(--accent); }
   </style>
 </head>
 <body>
-
 <div class="app">
 
   <div class="header">
@@ -224,8 +216,8 @@
 
   <div class="task-card">
     <div class="task-label">Find any 5 letters</div>
-    <div class="task-word" id="taskWord">DEMO MODE</div>
-    <div class="task-hint" id="taskHint">💡 Swipe across the grid to connect letters</div>
+    <div class="task-word">DEMO MODE</div>
+    <div class="task-hint">💡 Swipe across the grid to connect 5 letters</div>
   </div>
 
   <div class="status-bar">
@@ -235,7 +227,7 @@
 
   <div class="grid-wrapper">
     <svg class="grid-svg" id="lineSvg"></svg>
-    <div class="grid" id="grid"></div>
+    <div id="grid"></div>
   </div>
 
   <div class="bottom-bar">
@@ -245,259 +237,353 @@
   </div>
 
 </div>
-
 <script>
-if (window.Telegram && window.Telegram.WebApp) {
-  Telegram.WebApp.ready();
-  Telegram.WebApp.expand();
+if (window.Telegram?.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
+
+const COLS     = 10;
+const ROWS     = 10;
+const NEED     = 5;
+const LETTERS  = 'ABCDEFGHIJKLMNOPRSTUVWY';
+const COLORS   = ['#2d7a5f','#e86f3a','#f5c842','#5b9cf6','#e84393','#43c59e'];
+
+// grid[row][col] = { el, letter } | null
+let grid       = [];
+let selected   = [];   // [{row,col}]
+let isDragging = false;
+let score      = 0;
+let busy       = false; // lock during gravity
+
+const gridEl = document.getElementById('grid');
+const svgEl  = document.getElementById('lineSvg');
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+function rndLetter() { return LETTERS[Math.floor(Math.random()*LETTERS.length)]; }
+
+function makeTile(letter) {
+  const el = document.createElement('div');
+  el.className = 'tile';
+  el.textContent = letter;
+  return el;
 }
 
-const GRID_SIZE       = 10;
-const SELECT_REQUIRED = 5;
-const LETTERS         = 'ABCDEFGHIJKLMNOPRSTUVWY';
-const COLORS          = ['#2d7a5f','#e86f3a','#f5c842','#5b9cf6','#e84393','#43c59e'];
-
-let tiles    = [];
-let selected = [];
-let isDragging = false;
-let score    = 0;
-
-// ─── BUILD GRID ───────────────────────────────────────────────
 function buildGrid() {
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '';
-  tiles = [];
-
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      const letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-      const el = document.createElement('div');
-      el.className  = 'tile';
-      el.textContent = letter;
-      el.dataset.idx = tiles.length;
-      grid.appendChild(el);
-      tiles.push({ el, letter, row: r, col: c, removed: false });
+  gridEl.innerHTML = '';
+  grid = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      const letter = rndLetter();
+      const el     = makeTile(letter);
+      // store coords on element for quick lookup
+      el.dataset.r = r;
+      el.dataset.c = c;
+      gridEl.appendChild(el);
+      grid[r][c] = { el, letter };
     }
   }
+  attachGridEvents();
+}
 
-  // ── MOUSE events (desktop) ──
-  grid.addEventListener('mousedown', e => {
+// ─── TOUCH / MOUSE ────────────────────────────────────────────────────
+function attachGridEvents() {
+  gridEl.addEventListener('mousedown', e => {
+    if (busy) return;
     const tile = e.target.closest('.tile');
     if (!tile) return;
     isDragging = true;
     clearSelection();
-    trySelect(+tile.dataset.idx);
+    trySelect(+tile.dataset.r, +tile.dataset.c);
     e.preventDefault();
   });
-
-  grid.addEventListener('mousemove', e => {
-    if (!isDragging) return;
+  gridEl.addEventListener('mousemove', e => {
+    if (!isDragging || busy) return;
     const tile = e.target.closest('.tile');
-    if (tile) trySelect(+tile.dataset.idx);
+    if (tile) trySelect(+tile.dataset.r, +tile.dataset.c);
   });
-
   document.addEventListener('mouseup', () => { isDragging = false; });
 
-  // ── TOUCH events (mobile) ──
-  // We attach to the grid so we always receive touchmove even when
-  // the finger is over a child tile (no pointer-capture weirdness).
-  grid.addEventListener('touchstart', e => {
-    e.preventDefault();           // prevent scroll & ghost clicks
+  gridEl.addEventListener('touchstart', e => {
+    if (busy) return;
+    e.preventDefault();
     isDragging = true;
     clearSelection();
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const tile = el && el.closest('.tile');
-    if (tile) trySelect(+tile.dataset.idx);
+    const t = e.touches[0];
+    pickTile(t.clientX, t.clientY);
   }, { passive: false });
-
-  grid.addEventListener('touchmove', e => {
+  gridEl.addEventListener('touchmove', e => {
+    if (!isDragging || busy) return;
     e.preventDefault();
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    // elementFromPoint works even when finger is captured
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const tile = el && el.closest('.tile');
-    if (tile) trySelect(+tile.dataset.idx);
+    const t = e.touches[0];
+    pickTile(t.clientX, t.clientY);
   }, { passive: false });
-
-  grid.addEventListener('touchend', e => {
+  gridEl.addEventListener('touchend', e => {
     e.preventDefault();
     isDragging = false;
   }, { passive: false });
 }
 
-// ─── SELECT LOGIC ─────────────────────────────────────────────
-function trySelect(idx) {
-  const tile = tiles[idx];
-  if (!tile || tile.removed) return;
-  if (selected.includes(idx))  return;
-  if (selected.length >= SELECT_REQUIRED) return;
+function pickTile(cx, cy) {
+  const el = document.elementFromPoint(cx, cy);
+  if (!el) return;
+  const tile = el.closest('.tile');
+  if (!tile) return;
+  trySelect(+tile.dataset.r, +tile.dataset.c);
+}
 
-  // Must be adjacent (including diagonals) to last selected
+// ─── SELECTION ────────────────────────────────────────────────────────
+function trySelect(r, c) {
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+  const cell = grid[r][c];
+  if (!cell) return;
+  // already selected?
+  if (selected.some(s => s.r === r && s.c === c)) return;
+  if (selected.length >= NEED) return;
+  // adjacency check
   if (selected.length > 0) {
-    const last = tiles[selected[selected.length - 1]];
-    if (Math.abs(last.row - tile.row) > 1 || Math.abs(last.col - tile.col) > 1) return;
+    const last = selected[selected.length-1];
+    if (Math.abs(last.r - r) > 1 || Math.abs(last.c - c) > 1) return;
   }
-
-  selected.push(idx);
-  tile.el.classList.add('selected');
-  if (selected.length === 1) tile.el.classList.add('first-sel');
+  selected.push({ r, c });
+  cell.el.classList.add('selected');
+  if (selected.length === 1) cell.el.classList.add('first-sel');
   updateStatus();
   drawLines();
-
-  if (selected.length === SELECT_REQUIRED) {
-    setTimeout(submitWord, 300);
-  }
+  if (selected.length === NEED) setTimeout(submitWord, 280);
 }
 
 function clearSelection() {
-  selected.forEach(i => tiles[i].el.classList.remove('selected', 'first-sel'));
+  selected.forEach(({ r, c }) => {
+    const cell = grid[r][c];
+    if (cell) cell.el.classList.remove('selected','first-sel');
+  });
   selected = [];
   updateStatus();
   drawLines();
 }
 
-// ─── STATUS ───────────────────────────────────────────────────
+// ─── STATUS ───────────────────────────────────────────────────────────
 function updateStatus() {
   const sw = document.getElementById('selectedWord');
   document.getElementById('selCount').textContent = selected.length;
-
-  if (selected.length === 0) {
+  if (!selected.length) {
     sw.textContent = '_ _ _ _ _';
     sw.style.color = 'var(--text-muted)';
   } else {
-    sw.textContent = selected.map(i => tiles[i].letter).join(' ');
-    sw.style.color  = 'var(--primary)';
+    sw.textContent = selected.map(({r,c}) => grid[r][c].letter).join(' ');
+    sw.style.color = 'var(--primary)';
   }
 }
 
-// ─── SVG LINES ────────────────────────────────────────────────
+// ─── SVG LINES ────────────────────────────────────────────────────────
 function drawLines() {
-  const svg     = document.getElementById('lineSvg');
-  svg.innerHTML = '';
+  svgEl.innerHTML = '';
   if (selected.length < 2) return;
-
-  const gridRect = document.getElementById('grid').getBoundingClientRect();
-  const pts = selected.map(idx => {
-    const r = tiles[idx].el.getBoundingClientRect();
-    return { x: r.left + r.width/2 - gridRect.left, y: r.top + r.height/2 - gridRect.top };
+  const wr = gridEl.getBoundingClientRect();
+  const svgR = svgEl.getBoundingClientRect();
+  const pts = selected.map(({r,c}) => {
+    const tr = grid[r][c].el.getBoundingClientRect();
+    return { x: tr.left + tr.width/2 - svgR.left, y: tr.top + tr.height/2 - svgR.top };
   });
-
-  const pointsStr = pts.map(p => `${p.x},${p.y}`).join(' ');
-
-  const bg = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-  bg.setAttribute('points', pointsStr);
-  bg.setAttribute('fill','none');
-  bg.setAttribute('stroke','rgba(255,255,255,0.85)');
-  bg.setAttribute('stroke-width','5');
-  bg.setAttribute('stroke-linecap','round');
-  bg.setAttribute('stroke-linejoin','round');
-  svg.appendChild(bg);
-
-  const fg = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-  fg.setAttribute('points', pointsStr);
-  fg.setAttribute('fill','none');
-  fg.setAttribute('stroke','var(--primary)');
-  fg.setAttribute('stroke-width','2.5');
-  fg.setAttribute('stroke-linecap','round');
-  fg.setAttribute('stroke-linejoin','round');
-  svg.appendChild(fg);
+  const ps = pts.map(p=>`${p.x},${p.y}`).join(' ');
+  [[5,'rgba(255,255,255,.85)'],[2.5,'var(--primary)']].forEach(([w,s]) => {
+    const pl = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    pl.setAttribute('points', ps);
+    pl.setAttribute('fill','none');
+    pl.setAttribute('stroke', s);
+    pl.setAttribute('stroke-width', w);
+    pl.setAttribute('stroke-linecap','round');
+    pl.setAttribute('stroke-linejoin','round');
+    svgEl.appendChild(pl);
+  });
 }
 
-// ─── SUBMIT ───────────────────────────────────────────────────
+// ─── SUBMIT + GRAVITY ─────────────────────────────────────────────────
 function submitWord() {
-  if (selected.length < SELECT_REQUIRED) return;
+  if (selected.length < NEED || busy) return;
+  busy = true;
 
-  const burst = [...selected];
-  const positions = burst.map(idx => {
-    const r = tiles[idx].el.getBoundingClientRect();
-    return { x: r.left + r.width/2, y: r.top + r.height/2 };
+  const toRemove = [...selected];
+  const positions = toRemove.map(({r,c}) => {
+    const tr = grid[r][c].el.getBoundingClientRect();
+    return { x: tr.left + tr.width/2, y: tr.top + tr.height/2 };
   });
-
   clearSelection();
 
-  burst.forEach((idx, i) => {
-    const tile = tiles[idx];
-    tile.el.style.setProperty('--rot', (Math.random()*30-15)+'deg');
-    tile.el.classList.add('bursting');
-    tile.removed = true;
-
-    setTimeout(() => {
-      tile.letter      = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-      tile.el.textContent = tile.letter;
-      tile.el.classList.remove('bursting','selected','first-sel');
-      tile.el.style.removeProperty('--rot');
-      tile.removed = false;
-
-      tile.el.style.opacity   = '0';
-      tile.el.style.transform = 'scale(0.4)';
-      requestAnimationFrame(() => {
-        tile.el.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
-        tile.el.style.opacity   = '1';
-        tile.el.style.transform = 'scale(1)';
-        setTimeout(() => tile.el.style.transition = '', 280);
-      });
-    }, 440);
-
+  // 1. Burst removed tiles
+  toRemove.forEach(({r,c}, i) => {
+    const cell = grid[r][c];
+    cell.el.style.setProperty('--rot', (Math.random()*28-14)+'deg');
+    cell.el.classList.add('bursting');
     spawnParticles(positions[i].x, positions[i].y);
+    grid[r][c] = null; // mark empty immediately
   });
 
-  score += SELECT_REQUIRED * 10;
+  // 2. Score
+  score += NEED * 10;
   document.getElementById('scoreVal').textContent = score;
-  spawnScorePop(positions[Math.floor(positions.length/2)], `+${SELECT_REQUIRED*10}`);
-
-  if (window.Telegram?.WebApp?.HapticFeedback) {
+  spawnScorePop(positions[Math.floor(positions.length/2)], `+${NEED*10}`);
+  if (window.Telegram?.WebApp?.HapticFeedback)
     Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+
+  // 3. After burst animation — apply gravity then fill top
+  setTimeout(() => {
+    // Remove bursted DOM elements
+    toRemove.forEach(({r,c}) => {
+      // cell is already null in grid; find el by class
+    });
+    // Actually remove the DOM nodes that have .bursting
+    gridEl.querySelectorAll('.tile.bursting').forEach(el => el.remove());
+
+    applyGravity();
+  }, 420);
+}
+
+// Drop tiles down column by column
+function applyGravity() {
+  // We need tile pixel size to compute translateY offset
+  // Get one existing tile rect as reference (or compute from grid layout)
+  const tileSize = getTileSize();
+  if (!tileSize) { busy = false; return; }
+
+  let maxDelay = 0;
+
+  for (let c = 0; c < COLS; c++) {
+    // collect non-null cells from bottom to top
+    let writeRow = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c] !== null) {
+        if (r !== writeRow) {
+          // move tile down from r to writeRow
+          const fallDist = writeRow - r;
+          const cell = grid[r][c];
+          grid[writeRow][c] = cell;
+          grid[r][c] = null;
+          // Animate: translateY by fallDist * (tileSize + gap)
+          const dy = fallDist * (tileSize + 4);
+          cell.el.style.transition = 'none';
+          cell.el.style.transform  = 'translateY(0)';
+          // force reflow
+          cell.el.getBoundingClientRect();
+          cell.el.style.transition = `transform ${0.18 + fallDist * 0.06}s cubic-bezier(.4,0,.2,1)`;
+          cell.el.style.transform  = `translateY(${dy}px)`;
+          // update data coords
+          cell.el.dataset.r = writeRow;
+          const delay = fallDist * 60;
+          maxDelay = Math.max(maxDelay, delay + 220);
+          setTimeout(() => {
+            cell.el.style.transition = '';
+            cell.el.style.transform  = '';
+            // Re-insert in correct DOM order
+            reorderDOM();
+          }, delay + 220);
+        }
+        writeRow--;
+      }
+    }
+    // Fill empty rows at the top of this column
+    for (let r = writeRow; r >= 0; r--) {
+      const letter = rndLetter();
+      const el     = makeTile(letter);
+      el.dataset.r = r;
+      el.dataset.c = c;
+      grid[r][c]   = { el, letter };
+      gridEl.appendChild(el);
+      // Start above, animate down
+      el.style.opacity   = '0';
+      el.style.transform = `translateY(${-(ROWS - writeRow) * (tileSize + 4)}px)`;
+      const delay = (writeRow - r + 1) * 50 + 120;
+      maxDelay = Math.max(maxDelay, delay + 350);
+      setTimeout(() => {
+        el.style.transition = 'opacity .28s ease, transform .32s cubic-bezier(.4,0,.2,1)';
+        el.style.opacity    = '1';
+        el.style.transform  = 'translateY(0)';
+        setTimeout(() => { el.style.transition = ''; el.style.transform = ''; reorderDOM(); }, 350);
+      }, delay);
+    }
+  }
+
+  setTimeout(() => {
+    reorderDOM();
+    busy = false;
+  }, maxDelay + 50);
+}
+
+// Reorder DOM children to match grid[0..ROWS-1][0..COLS-1] reading order
+function reorderDOM() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = grid[r][c];
+      if (cell) {
+        cell.el.dataset.r = r;
+        cell.el.dataset.c = c;
+        gridEl.appendChild(cell.el); // appendChild moves existing nodes
+      }
+    }
   }
 }
 
-// ─── PARTICLES ────────────────────────────────────────────────
+function getTileSize() {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r][c]) return grid[r][c].el.getBoundingClientRect().width;
+  return 0;
+}
+
+// ─── PARTICLES ────────────────────────────────────────────────────────
 function spawnParticles(cx, cy) {
   for (let i = 0; i < 10; i++) {
-    const p     = document.createElement('div');
+    const p = document.createElement('div');
     p.className = 'particle';
-    const angle = (i/10)*Math.PI*2 + Math.random()*0.6;
+    const angle = (i/10)*Math.PI*2 + Math.random()*.6;
     const dist  = 28 + Math.random()*44;
-    p.style.cssText = `
-      left:${cx-3.5}px; top:${cy-3.5}px;
+    p.style.cssText = `left:${cx-3.5}px;top:${cy-3.5}px;
       background:${COLORS[Math.floor(Math.random()*COLORS.length)]};
-      --px:${Math.cos(angle)*dist}px;
-      --py:${Math.sin(angle)*dist}px;
-      animation-delay:${Math.random()*50}ms;
-    `;
+      --px:${Math.cos(angle)*dist}px;--py:${Math.sin(angle)*dist}px;
+      animation-delay:${Math.random()*50}ms;`;
     document.body.appendChild(p);
     setTimeout(() => p.remove(), 650);
   }
 }
 
-// ─── SCORE POP ────────────────────────────────────────────────
+// ─── SCORE POP ────────────────────────────────────────────────────────
 function spawnScorePop(pos, text) {
   const el = document.createElement('div');
   el.className  = 'score-pop';
   el.textContent = text;
-  el.style.left  = pos.x + 'px';
-  el.style.top   = pos.y + 'px';
+  el.style.left  = pos.x+'px';
+  el.style.top   = pos.y+'px';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 750);
 }
 
-// ─── SHUFFLE ──────────────────────────────────────────────────
+// ─── SHUFFLE ──────────────────────────────────────────────────────────
 function shuffleGrid() {
+  if (busy) return;
   clearSelection();
-  tiles.forEach((tile, i) => {
-    tile.letter      = LETTERS[Math.floor(Math.random()*LETTERS.length)];
-    tile.el.textContent = tile.letter;
-    tile.removed     = false;
-    tile.el.classList.remove('bursting');
-    tile.el.style.opacity   = '0';
-    tile.el.style.transform = 'scale(0.5)';
-    setTimeout(() => {
-      tile.el.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
-      tile.el.style.opacity   = '1';
-      tile.el.style.transform = 'scale(1)';
-      setTimeout(() => tile.el.style.transition = '', 220);
-    }, i * 3);
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const cell = grid[r][c];
+      if (!cell) continue;
+      cell.letter = rndLetter();
+      cell.el.textContent = cell.letter;
+      cell.el.classList.remove('bursting');
+      cell.el.style.opacity   = '0';
+      cell.el.style.transform = 'scale(.5)';
+    }
+  requestAnimationFrame(() => {
+    let i = 0;
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        const cell = grid[r][c];
+        if (!cell) continue;
+        const idx = i++;
+        setTimeout(() => {
+          cell.el.style.transition = 'opacity .22s ease, transform .22s ease';
+          cell.el.style.opacity   = '1';
+          cell.el.style.transform = 'scale(1)';
+          setTimeout(() => cell.el.style.transition = '', 220);
+        }, idx * 3);
+      }
   });
 }
 
