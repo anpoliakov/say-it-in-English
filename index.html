@@ -7,16 +7,16 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg:            #f4f1ec;
-      --surface:       #ffffff;
-      --text:          #1a1a1a;
-      --text-muted:    #6b6b6b;
-      --primary:       #2d7a5f;
-      --accent:        #e86f3a;
-      --accent-light:  #fdf0ea;
-      --shadow-sm:     0 1px 3px rgba(0,0,0,0.08);
-      --radius:        12px;
-      --radius-sm:     8px;
+      --bg:           #f4f1ec;
+      --surface:      #ffffff;
+      --text:         #1a1a1a;
+      --text-muted:   #6b6b6b;
+      --primary:      #2d7a5f;
+      --accent:       #e86f3a;
+      --accent-light: #fdf0ea;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.08);
+      --radius:       12px;
+      --radius-sm:    8px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -36,12 +36,13 @@
       height: 100dvh;
       max-width: 480px;
       margin: 0 auto;
-      padding: 12px 14px 12px;
+      padding: 12px 14px;
       gap: 10px;
     }
 
-    /* HEADER */
+    /* ── HEADER ── */
     .header {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -49,27 +50,27 @@
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow-sm);
-      flex-shrink: 0;
     }
     .header-title { font-size: 15px; font-weight: 700; color: var(--primary); }
     .score-block  { display: flex; align-items: center; gap: 6px; }
     .score-label  { font-size: 12px; color: var(--text-muted); }
     .score-value  { font-size: 20px; font-weight: 800; color: var(--accent); min-width: 36px; text-align: right; }
 
-    /* TASK */
+    /* ── TASK ── */
     .task-card {
+      flex-shrink: 0;
       background: var(--surface);
       border-radius: var(--radius);
       padding: 10px 16px;
       box-shadow: var(--shadow-sm);
-      flex-shrink: 0;
     }
     .task-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text-muted); }
     .task-word  { font-size: 20px; font-weight: 800; color: var(--text); margin: 2px 0; }
     .task-hint  { font-size: 12px; color: var(--primary); }
 
-    /* STATUS */
+    /* ── STATUS ── */
     .status-bar {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -77,24 +78,19 @@
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow-sm);
-      flex-shrink: 0;
     }
     .selected-word  { font-size: 20px; font-weight: 800; letter-spacing: 4px; color: var(--primary); min-height: 26px; }
     .selected-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .selected-count span { font-weight: 700; color: var(--accent); }
 
-    /* GRID AREA */
+    /* ── GRID AREA ── */
     .grid-area {
       flex: 1;
-      min-height: 0;          /* ключевое — не даёт расти за пределы flex */
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
+      min-height: 0;
       position: relative;
-      overflow: hidden;
     }
 
+    /* SVG для линий поверх тайлов */
     .grid-svg {
       position: absolute;
       inset: 0;
@@ -104,21 +100,19 @@
       height: 100%;
     }
 
-    /* Grid: 5 columns */
+    /* Контейнер тайлов — абсолютное позиционирование */
     #grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
+      position: absolute;
+      top: 0; left: 0;
       width: 100%;
+      /* height задаётся через JS */
       touch-action: none;
-      position: relative;
       z-index: 2;
-      /* не растягиваем на весь flex — грид занимает только нужную высоту */
-      align-self: flex-start;
     }
 
+    /* Каждый тайл абсолютный, координаты задаёт JS */
     .tile {
-      aspect-ratio: 1;
+      position: absolute;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -130,8 +124,9 @@
       color: var(--text);
       box-shadow: var(--shadow-sm);
       cursor: pointer;
+      /* анимируем только top для гравитации */
       transition: background .1s, color .1s, border-color .1s, transform .1s;
-      will-change: transform;
+      will-change: top, transform;
     }
     .tile.selected {
       background: var(--primary);
@@ -139,18 +134,14 @@
       border-color: var(--primary);
       transform: scale(0.90);
       box-shadow: 0 0 0 3px rgba(45,122,95,.25);
+      z-index: 5;
     }
     .tile.first-sel {
       background: #1d5c45;
       border-color: #1d5c45;
     }
-    .tile.empty {
-      background: transparent;
-      border-color: transparent;
-      box-shadow: none;
-      pointer-events: none;
-    }
 
+    /* burst */
     @keyframes burst {
       0%   { transform: scale(1);   opacity: 1; }
       30%  { transform: scale(1.35) rotate(var(--rot,6deg)); opacity: .85; }
@@ -162,6 +153,7 @@
       z-index: 10;
     }
 
+    /* particle */
     @keyframes particle {
       0%   { transform: translate(0,0) scale(1); opacity: 1; }
       100% { transform: translate(var(--px),var(--py)) scale(0); opacity: 0; }
@@ -172,6 +164,7 @@
       animation: particle .55s ease-out forwards;
     }
 
+    /* score pop */
     @keyframes scorePop {
       0%   { transform: translateY(0) scale(1);   opacity: 1; }
       55%  { transform: translateY(-30px) scale(1.2); opacity: 1; }
@@ -183,6 +176,7 @@
       animation: scorePop .7s ease-out forwards;
     }
 
+    /* empty state */
     .empty-state {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
@@ -190,14 +184,15 @@
       gap: 12px; opacity: 0;
       pointer-events: none;
       transition: opacity .4s;
+      z-index: 20;
     }
     .empty-state.visible { opacity: 1; pointer-events: auto; }
     .empty-state-icon { font-size: 48px; }
     .empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text); }
     .empty-state p  { font-size: 13px; color: var(--text-muted); }
 
-    /* BUTTONS */
-    .bottom-bar { display: flex; gap: 8px; flex-shrink: 0; }
+    /* bottom */
+    .bottom-bar { flex-shrink: 0; display: flex; gap: 8px; }
     .btn {
       flex: 1; padding: 11px 8px;
       border: none; border-radius: var(--radius);
@@ -232,7 +227,7 @@
     <div class="selected-count">Selected: <span id="selCount">0</span> / 5</div>
   </div>
 
-  <div class="grid-area">
+  <div class="grid-area" id="gridArea">
     <svg class="grid-svg" id="lineSvg"></svg>
     <div id="grid"></div>
     <div class="empty-state" id="emptyState">
@@ -256,48 +251,65 @@ if (window.Telegram?.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand()
 const COLS    = 5;
 const ROWS    = 5;
 const NEED    = 5;
+const GAP     = 8;
 const LETTERS = 'ABCDEFGHIJKLMNOPRSTUVWY';
 const COLORS  = ['#2d7a5f','#e86f3a','#f5c842','#5b9cf6','#e84393','#43c59e'];
 
+// grid[r][c] = { el, letter } | null
 let grid      = [];
 let selected  = [];
 let isDragging = false;
 let score     = 0;
 let busy      = false;
 let remaining = ROWS * COLS;
+let tileSize  = 0; // вычисляется при buildGrid
 
 const gridEl  = document.getElementById('grid');
+const areaEl  = document.getElementById('gridArea');
 const svgEl   = document.getElementById('lineSvg');
 const emptyEl = document.getElementById('emptyState');
 
-function rndLetter() { return LETTERS[Math.floor(Math.random() * LETTERS.length)]; }
+// ── вычислить размер тайла из ширины контейнера ──────────────────
+function calcTileSize() {
+  const w = areaEl.clientWidth;
+  return Math.floor((w - GAP * (COLS - 1)) / COLS);
+}
 
+// ── позиция тайла в пикселях ─────────────────────────────────────
+function tileLeft(c) { return c * (tileSize + GAP); }
+function tileTop(r)  { return r * (tileSize + GAP); }
+
+// ── создать элемент тайла ─────────────────────────────────────────
 function makeTile(letter, r, c) {
   const el = document.createElement('div');
   el.className = 'tile';
   el.textContent = letter;
   el.dataset.r = r;
   el.dataset.c = c;
+  el.style.width  = tileSize + 'px';
+  el.style.height = tileSize + 'px';
+  el.style.left   = tileLeft(c) + 'px';
+  el.style.top    = tileTop(r)  + 'px';
   return el;
 }
 
-function makeEmpty(r, c) {
-  const el = document.createElement('div');
-  el.className = 'tile empty';
-  el.dataset.r = r;
-  el.dataset.c = c;
-  return el;
-}
-
+// ── построить поле ────────────────────────────────────────────────
 function buildGrid() {
+  tileSize = calcTileSize();
+
+  // высота контейнера = 5 рядов
+  const gridH = ROWS * tileSize + (ROWS - 1) * GAP;
+  gridEl.style.height = gridH + 'px';
+
   gridEl.innerHTML = '';
   grid = [];
   remaining = ROWS * COLS;
   emptyEl.classList.remove('visible');
+
   for (let r = 0; r < ROWS; r++) {
     grid[r] = [];
     for (let c = 0; c < COLS; c++) {
-      const letter = rndLetter();
+      const letter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
       const el = makeTile(letter, r, c);
       gridEl.appendChild(el);
       grid[r][c] = { el, letter };
@@ -312,47 +324,49 @@ function newGame() {
   buildGrid();
 }
 
+// ── события ───────────────────────────────────────────────────────
 function attachEvents() {
-  gridEl.addEventListener('mousedown', e => {
+  gridEl.onmousedown = e => {
     if (busy) return;
-    const t = e.target.closest('.tile:not(.empty)');
-    if (!t) return;
+    const t = e.target.closest('.tile');
+    if (!t || t.classList.contains('bursting')) return;
     isDragging = true;
     clearSelection();
     trySelect(+t.dataset.r, +t.dataset.c);
     e.preventDefault();
-  });
-  gridEl.addEventListener('mousemove', e => {
+  };
+  gridEl.onmousemove = e => {
     if (!isDragging || busy) return;
-    const t = e.target.closest('.tile:not(.empty)');
-    if (t) trySelect(+t.dataset.r, +t.dataset.c);
-  });
-  document.addEventListener('mouseup', () => { isDragging = false; });
+    const t = e.target.closest('.tile');
+    if (t && !t.classList.contains('bursting')) trySelect(+t.dataset.r, +t.dataset.c);
+  };
+  document.onmouseup = () => { isDragging = false; };
 
-  gridEl.addEventListener('touchstart', e => {
+  gridEl.ontouchstart = e => {
     if (busy) return;
     e.preventDefault();
     isDragging = true;
     clearSelection();
     fromPoint(e.touches[0]);
-  }, { passive: false });
-  gridEl.addEventListener('touchmove', e => {
+  };
+  gridEl.ontouchmove = e => {
     if (!isDragging || busy) return;
     e.preventDefault();
     fromPoint(e.touches[0]);
-  }, { passive: false });
-  gridEl.addEventListener('touchend', e => {
+  };
+  gridEl.ontouchend = e => {
     e.preventDefault();
     isDragging = false;
-  }, { passive: false });
+  };
 }
 
 function fromPoint(touch) {
   const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const t  = el && el.closest('.tile:not(.empty)');
-  if (t) trySelect(+t.dataset.r, +t.dataset.c);
+  const t  = el && el.closest('.tile');
+  if (t && !t.classList.contains('bursting')) trySelect(+t.dataset.r, +t.dataset.c);
 }
 
+// ── выбор тайлов ──────────────────────────────────────────────────
 function trySelect(r, c) {
   if (!grid[r] || !grid[r][c]) return;
   if (selected.some(s => s.r === r && s.c === c)) return;
@@ -372,8 +386,7 @@ function trySelect(r, c) {
 
 function clearSelection() {
   selected.forEach(({ r, c }) => {
-    const cell = grid[r][c];
-    if (cell) cell.el.classList.remove('selected', 'first-sel');
+    if (grid[r] && grid[r][c]) grid[r][c].el.classList.remove('selected', 'first-sel');
   });
   selected = [];
   updateStatus();
@@ -392,6 +405,7 @@ function updateStatus() {
   }
 }
 
+// ── SVG линии ─────────────────────────────────────────────────────
 function drawLines() {
   svgEl.innerHTML = '';
   if (selected.length < 2) return;
@@ -413,11 +427,12 @@ function drawLines() {
   });
 }
 
+// ── подтверждение ─────────────────────────────────────────────────
 function submitWord() {
   if (selected.length < NEED || busy) return;
   busy = true;
 
-  const toRemove = [...selected];
+  const toRemove  = [...selected];
   const positions = toRemove.map(({ r, c }) => {
     const tr = grid[r][c].el.getBoundingClientRect();
     return { x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 };
@@ -425,6 +440,7 @@ function submitWord() {
 
   clearSelection();
 
+  // запускаем burst
   toRemove.forEach(({ r, c }, i) => {
     const cell = grid[r][c];
     cell.el.style.setProperty('--rot', (Math.random() * 28 - 14) + 'deg');
@@ -440,95 +456,76 @@ function submitWord() {
   if (window.Telegram?.WebApp?.HapticFeedback)
     Telegram.WebApp.HapticFeedback.impactOccurred('medium');
 
+  // после анимации burst — удаляем элементы и запускаем гравитацию
   setTimeout(() => {
     toRemove.forEach(({ r, c }) => {
-      const burstedEl = gridEl.querySelector(`.tile.bursting[data-r="${r}"][data-c="${c}"]`);
-      if (burstedEl) burstedEl.remove();
-      const ph = makeEmpty(r, c);
-      grid[r][c] = { el: ph, letter: null, empty: true };
-      insertTileAt(ph, r, c);
+      const el = gridEl.querySelector(`.tile.bursting[data-r="${r}"][data-c="${c}"]`);
+      if (el) el.remove();
     });
     applyGravity();
-  }, 400);
+  }, 420);
 }
 
-function insertTileAt(el, r, c) {
-  const allTiles = Array.from(gridEl.querySelectorAll('.tile'));
-  const pos = r * COLS + c;
-  let refNode = null;
-  for (const t of allTiles) {
-    const tp = (+t.dataset.r) * COLS + (+t.dataset.c);
-    if (tp > pos) { refNode = t; break; }
-  }
-  gridEl.insertBefore(el, refNode);
-}
-
+// ── гравитация — только по оси Y, без touch DOM ───────────────────
 function applyGravity() {
-  let tileH = 0;
-  outer: for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++) {
-      const cell = grid[r][c];
-      if (cell && !cell.empty) { tileH = cell.el.getBoundingClientRect().height; break outer; }
-    }
-  const gap  = 8;
-  const step = tileH + gap;
-  let maxDelay = 0;
+  const step = tileSize + GAP;
+  let maxMs  = 0;
 
   for (let c = 0; c < COLS; c++) {
-    let writeRow = ROWS - 1;
+    // собираем живые тайлы в колонке снизу вверх
+    const living = [];
     for (let r = ROWS - 1; r >= 0; r--) {
-      const cell = grid[r][c];
-      if (cell && !cell.empty) {
-        if (r !== writeRow) {
-          grid[writeRow][c] = cell;
-          grid[r][c] = { el: makeEmpty(r, c), letter: null, empty: true };
-          insertTileAt(grid[r][c].el, r, c);
-
-          const fallDist = writeRow - r;
-          const dy    = fallDist * step;
-          const dur   = 0.18 + fallDist * 0.07;
-          const delay = fallDist * 30;
-          maxDelay = Math.max(maxDelay, delay + dur * 1000);
-
-          cell.el.dataset.r = writeRow;
-          cell.el.dataset.c = c;
-
-          cell.el.style.transition = 'none';
-          cell.el.style.transform  = 'translateY(0px)';
-          cell.el.getBoundingClientRect();
-          cell.el.style.transition = `transform ${dur}s cubic-bezier(.4,0,.2,1) ${delay}ms`;
-          cell.el.style.transform  = `translateY(${dy}px)`;
-
-          setTimeout(() => {
-            cell.el.style.transition = '';
-            cell.el.style.transform  = '';
-            reorderDOM();
-          }, delay + dur * 1000 + 20);
-        }
-        writeRow--;
-      }
+      if (grid[r] && grid[r][c]) living.push({ r, cell: grid[r][c] });
     }
+    // living[0] — самый нижний живой тайл
+
+    // стираем колонку в логической сетке
+    for (let r = 0; r < ROWS; r++) {
+      if (grid[r]) grid[r][c] = null;
+    }
+
+    // расставляем живые тайлы с самого низа
+    living.forEach((item, idx) => {
+      const newRow = ROWS - 1 - idx;
+      const newTop = tileTop(newRow);
+      const oldTop = tileTop(item.r);
+      const dist   = newRow - item.r; // сколько строк падает вниз
+
+      grid[newRow][c] = item.cell;
+      item.cell.el.dataset.r = newRow;
+      item.cell.el.dataset.c = c;
+
+      if (dist > 0) {
+        // анимируем только top
+        const dur   = 150 + dist * 60;  // ms
+        const delay = 0;
+        maxMs = Math.max(maxMs, dur);
+
+        // убираем transition, фиксируем текущую top
+        item.cell.el.style.transition = 'none';
+        item.cell.el.style.top = oldTop + 'px';
+        item.cell.el.getBoundingClientRect(); // reflow
+
+        item.cell.el.style.transition = `top ${dur}ms cubic-bezier(.4,0,.2,1) ${delay}ms`;
+        item.cell.el.style.top = newTop + 'px';
+      }
+    });
   }
 
   setTimeout(() => {
-    reorderDOM();
+    // снимаем inline transition со всех тайлов
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r] && grid[r][c]) {
+          grid[r][c].el.style.transition = '';
+        }
+      }
     busy = false;
     if (remaining <= 0) setTimeout(() => emptyEl.classList.add('visible'), 200);
-  }, maxDelay + 80);
+  }, maxMs + 60);
 }
 
-function reorderDOM() {
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++) {
-      const cell = grid[r][c];
-      if (cell) {
-        cell.el.dataset.r = r;
-        cell.el.dataset.c = c;
-        gridEl.appendChild(cell.el);
-      }
-    }
-}
-
+// ── частицы ───────────────────────────────────────────────────────
 function spawnParticles(cx, cy) {
   for (let i = 0; i < 10; i++) {
     const p = document.createElement('div');
@@ -544,6 +541,7 @@ function spawnParticles(cx, cy) {
   }
 }
 
+// ── поп очков ─────────────────────────────────────────────────────
 function spawnScorePop(pos, text) {
   const el = document.createElement('div');
   el.className   = 'score-pop';
