@@ -38,8 +38,6 @@
       padding: 12px 14px;
       gap: 10px;
     }
-
-    /* HEADER */
     .header {
       flex-shrink: 0;
       display: flex;
@@ -54,8 +52,6 @@
     .score-block  { display: flex; align-items: center; gap: 6px; }
     .score-label  { font-size: 12px; color: var(--text-muted); }
     .score-value  { font-size: 20px; font-weight: 800; color: var(--accent); min-width: 36px; text-align: right; }
-
-    /* TASK */
     .task-card {
       flex-shrink: 0;
       background: var(--surface);
@@ -66,8 +62,6 @@
     .task-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text-muted); }
     .task-word  { font-size: 20px; font-weight: 800; color: var(--text); margin: 2px 0; }
     .task-hint  { font-size: 12px; color: var(--primary); }
-
-    /* STATUS */
     .status-bar {
       flex-shrink: 0;
       display: flex;
@@ -84,26 +78,11 @@
     }
     .selected-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .selected-count span { font-weight: 700; color: var(--accent); }
-
-    /* GRID AREA */
-    .grid-area {
-      flex: 1;
-      min-height: 0;
-      position: relative;
-    }
-    #grid {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      z-index: 2;
-    }
-
-    /* TILE */
+    .grid-area { flex: 1; min-height: 0; position: relative; }
+    #grid { position: absolute; top: 0; left: 0; width: 100%; z-index: 2; }
     .tile {
       position: absolute;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       background: #fff;
       border: 2px solid rgba(0,0,0,.09);
       border-radius: var(--radius-sm);
@@ -114,10 +93,8 @@
       cursor: pointer;
       transition: background .12s, color .12s, border-color .12s, transform .12s;
       will-change: top, transform;
-      /* номер в кружке выбора */
     }
     .tile:active { transform: scale(.93); }
-
     .tile.selected {
       background: var(--primary);
       color: #fff;
@@ -126,18 +103,14 @@
       box-shadow: 0 0 0 3px rgba(45,122,95,.28);
       z-index: 5;
     }
-    /* показываем порядковый номер выбранного тайла */
     .tile.selected::after {
       content: attr(data-order);
       position: absolute;
       top: 3px; right: 5px;
-      font-size: 10px;
-      font-weight: 900;
+      font-size: 10px; font-weight: 900;
       color: rgba(255,255,255,.75);
       line-height: 1;
     }
-
-    /* burst */
     @keyframes burst {
       0%   { transform: scale(1);   opacity: 1; }
       30%  { transform: scale(1.35) rotate(var(--rot,6deg)); opacity: .85; }
@@ -145,11 +118,8 @@
     }
     .tile.bursting {
       animation: burst .38s cubic-bezier(.36,.07,.19,.97) forwards;
-      pointer-events: none;
-      z-index: 10;
+      pointer-events: none; z-index: 10;
     }
-
-    /* particle */
     @keyframes particle {
       0%   { transform: translate(0,0) scale(1); opacity: 1; }
       100% { transform: translate(var(--px),var(--py)) scale(0); opacity: 0; }
@@ -159,8 +129,6 @@
       border-radius: 50%; pointer-events: none; z-index: 999;
       animation: particle .55s ease-out forwards;
     }
-
-    /* score pop */
     @keyframes scorePop {
       0%   { transform: translateY(0) scale(1);   opacity: 1; }
       55%  { transform: translateY(-30px) scale(1.2); opacity: 1; }
@@ -171,23 +139,17 @@
       color: var(--accent); pointer-events: none; z-index: 1000;
       animation: scorePop .7s ease-out forwards;
     }
-
-    /* empty state */
     .empty-state {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 12px; opacity: 0;
-      pointer-events: none;
-      transition: opacity .4s;
-      z-index: 20;
+      gap: 12px; opacity: 0; pointer-events: none;
+      transition: opacity .4s; z-index: 20;
     }
     .empty-state.visible { opacity: 1; pointer-events: auto; }
     .empty-state-icon { font-size: 48px; }
     .empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text); }
     .empty-state p  { font-size: 13px; color: var(--text-muted); }
-
-    /* buttons */
     .bottom-bar { flex-shrink: 0; display: flex; gap: 8px; }
     .btn {
       flex: 1; padding: 11px 8px;
@@ -203,7 +165,6 @@
 </head>
 <body>
 <div class="app">
-
   <div class="header">
     <div class="header-title">🇬🇧 Say it in English</div>
     <div class="score-block">
@@ -211,18 +172,15 @@
       <span class="score-value" id="scoreVal">0</span>
     </div>
   </div>
-
   <div class="task-card">
     <div class="task-label">Tap any 5 letters</div>
     <div class="task-word">DEMO MODE</div>
     <div class="task-hint">💡 Tap letters to select, tap again to deselect</div>
   </div>
-
   <div class="status-bar">
     <div class="selected-word" id="selectedWord">_ _ _ _ _</div>
     <div class="selected-count">Selected: <span id="selCount">0</span> / 5</div>
   </div>
-
   <div class="grid-area" id="gridArea">
     <div id="grid"></div>
     <div class="empty-state" id="emptyState">
@@ -232,17 +190,84 @@
       <button class="btn btn-primary" style="flex:none;padding:10px 28px" onclick="newGame()">New game</button>
     </div>
   </div>
-
   <div class="bottom-bar">
-    <button class="btn btn-ghost"   onclick="clearSelection()">✕ Clear</button>
+    <button class="btn btn-ghost"   onclick="onClear()">✕ Clear</button>
     <button class="btn btn-primary" onclick="submitWord()">✓ Confirm</button>
     <button class="btn btn-danger"  onclick="newGame()">⟳ New game</button>
   </div>
-
 </div>
+
 <script>
 if (window.Telegram?.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
 
+// ═══════════════════════════════════════════
+//  AUDIO ENGINE  (Web Audio API, no files)
+// ═══════════════════════════════════════════
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // resume на случай если браузер приостановил
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// Играет одну ноту: freq Гц, тип волны, длительность, атака/спад
+function playNote(freq, type = 'sine', duration = 0.12, gain = 0.22, attackT = 0.01, decayT = 0.08) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.connect(env);
+    env.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(gain, ctx.currentTime + attackT);
+    env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + attackT + decayT);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+// Ноты пентатоники C-maj (C4..C5): красиво и без диссонансов
+const PENTA = [261.63, 293.66, 329.63, 392.00, 440.00];
+// чуть выше октава для последнего 5-го тапа
+const PENTA_HIGH = PENTA.map(f => f * 1.5);
+
+// Тап: восходящая нота по номеру выбранного (1..5)
+function soundSelect(orderIndex) {
+  // 0..3 — обычные, 4 (5-й тап) — чуть выше и ярче
+  if (orderIndex < 4) {
+    playNote(PENTA[orderIndex], 'triangle', 0.14, 0.20);
+  } else {
+    // 5-й тап: два звука одновременно = маленький аккорд
+    playNote(PENTA[4],      'triangle', 0.18, 0.18);
+    playNote(PENTA[4] * 1.25, 'sine',   0.18, 0.10);
+  }
+}
+
+// Снятие выбора: мягкий нисходящий
+function soundDeselect() {
+  playNote(300, 'sine', 0.10, 0.10, 0.005, 0.07);
+}
+
+// Победный арпеджио (submit)
+function soundSuccess() {
+  const notes = [392, 494, 587, 784];
+  notes.forEach((f, i) => {
+    setTimeout(() => playNote(f, 'triangle', 0.18, 0.22, 0.01, 0.14), i * 65);
+  });
+}
+
+// Clear: тихий сброс вниз
+function soundClear() {
+  playNote(220, 'sine', 0.12, 0.08, 0.005, 0.09);
+}
+
+// ═══════════════════════════════════════════
+//  ИГРОВАЯ ЛОГИКА
+// ═══════════════════════════════════════════
 const COLS    = 5;
 const ROWS    = 5;
 const NEED    = 5;
@@ -251,7 +276,7 @@ const LETTERS = 'ABCDEFGHIJKLMNOPRSTUVWY';
 const COLORS  = ['#2d7a5f','#e86f3a','#f5c842','#5b9cf6','#e84393','#43c59e'];
 
 let grid      = [];
-let selected  = [];   // [{ r, c }] — порядок важен!
+let selected  = [];
 let score     = 0;
 let busy      = false;
 let remaining = ROWS * COLS;
@@ -261,14 +286,12 @@ const gridEl  = document.getElementById('grid');
 const areaEl  = document.getElementById('gridArea');
 const emptyEl = document.getElementById('emptyState');
 
-// ─ размер тайла
 function calcTileSize() {
   return Math.floor((areaEl.clientWidth - GAP * (COLS - 1)) / COLS);
 }
 function tileLeft(c) { return c * (tileSize + GAP); }
 function tileTop(r)  { return r * (tileSize + GAP); }
 
-// ─ создать элемент
 function makeTile(letter, r, c) {
   const el = document.createElement('div');
   el.className = 'tile';
@@ -279,12 +302,10 @@ function makeTile(letter, r, c) {
   el.style.height = tileSize + 'px';
   el.style.left   = tileLeft(c) + 'px';
   el.style.top    = tileTop(r)  + 'px';
-  // обработчик тапа
   el.addEventListener('pointerdown', onTileTap);
   return el;
 }
 
-// ─ построить поле
 function buildGrid() {
   tileSize = calcTileSize();
   gridEl.style.height = (ROWS * tileSize + (ROWS - 1) * GAP) + 'px';
@@ -292,7 +313,6 @@ function buildGrid() {
   grid = [];
   remaining = ROWS * COLS;
   emptyEl.classList.remove('visible');
-
   for (let r = 0; r < ROWS; r++) {
     grid[r] = [];
     for (let c = 0; c < COLS; c++) {
@@ -312,7 +332,6 @@ function newGame() {
   updateStatus();
 }
 
-// ─ ТАП по тайлу
 function onTileTap(e) {
   e.preventDefault();
   if (busy) return;
@@ -328,31 +347,30 @@ function onTileTap(e) {
     selected.splice(idx, 1);
     el.classList.remove('selected');
     el.removeAttribute('data-order');
-    // перенумеруем оставшиеся
     selected.forEach((s, i) => {
       if (grid[s.r] && grid[s.r][s.c])
         grid[s.r][s.c].el.dataset.order = i + 1;
     });
+    soundDeselect();
+    if (window.Telegram?.WebApp?.HapticFeedback)
+      Telegram.WebApp.HapticFeedback.selectionChanged();
   } else {
-    // добавить выбор
     if (selected.length >= NEED) return;
+    const orderIndex = selected.length; // 0..4
     selected.push({ r, c });
     el.classList.add('selected');
     el.dataset.order = selected.length;
-
-    // автоподтверждение после 5-го выбора
+    soundSelect(orderIndex);
+    if (window.Telegram?.WebApp?.HapticFeedback)
+      Telegram.WebApp.HapticFeedback.selectionChanged();
     if (selected.length === NEED) {
-      setTimeout(submitWord, 300);
+      setTimeout(submitWord, 320);
     }
   }
-
-  if (window.Telegram?.WebApp?.HapticFeedback)
-    Telegram.WebApp.HapticFeedback.selectionChanged();
 
   updateStatus();
 }
 
-// ─ сброс выбора
 function clearSelection() {
   selected.forEach(({ r, c }) => {
     if (grid[r] && grid[r][c]) {
@@ -364,7 +382,11 @@ function clearSelection() {
   updateStatus();
 }
 
-// ─ статус
+function onClear() {
+  if (selected.length) soundClear();
+  clearSelection();
+}
+
 function updateStatus() {
   const sw = document.getElementById('selectedWord');
   document.getElementById('selCount').textContent = selected.length;
@@ -372,7 +394,6 @@ function updateStatus() {
     sw.textContent = '_ _ _ _ _';
     sw.style.color = 'var(--text-muted)';
   } else {
-    // заполняем буквы по порядку выбора, оставшиеся позиции — прочерк
     const chars = Array(NEED).fill('–');
     selected.forEach(({ r, c }, i) => { chars[i] = grid[r][c].letter; });
     sw.textContent = chars.join(' ');
@@ -380,7 +401,6 @@ function updateStatus() {
   }
 }
 
-// ─ подтверждение
 function submitWord() {
   if (selected.length < NEED || busy) return;
   busy = true;
@@ -391,9 +411,9 @@ function submitWord() {
     return { x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 };
   });
 
-  // снимаем selected до burst чтоб classList убрался
   selected = [];
   updateStatus();
+  soundSuccess();
 
   toRemove.forEach(({ r, c }, i) => {
     const cell = grid[r][c];
@@ -421,26 +441,20 @@ function submitWord() {
   }, 420);
 }
 
-// ─ гравитация только по Y
 function applyGravity() {
-  const step = tileSize + GAP;
-  let maxMs  = 0;
-
+  let maxMs = 0;
   for (let c = 0; c < COLS; c++) {
     const living = [];
     for (let r = ROWS - 1; r >= 0; r--) {
       if (grid[r] && grid[r][c]) living.push({ r, cell: grid[r][c] });
     }
     for (let r = 0; r < ROWS; r++) { if (grid[r]) grid[r][c] = null; }
-
     living.forEach((item, idx) => {
       const newRow = ROWS - 1 - idx;
       const newTop = tileTop(newRow);
       const dist   = newRow - item.r;
-
       grid[newRow][c] = item.cell;
       item.cell.el.dataset.r = newRow;
-
       if (dist > 0) {
         const dur = 150 + dist * 60;
         maxMs = Math.max(maxMs, dur);
@@ -452,7 +466,6 @@ function applyGravity() {
       }
     });
   }
-
   setTimeout(() => {
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
@@ -462,7 +475,6 @@ function applyGravity() {
   }, maxMs + 60);
 }
 
-// ─ частицы
 function spawnParticles(cx, cy) {
   for (let i = 0; i < 10; i++) {
     const p = document.createElement('div');
