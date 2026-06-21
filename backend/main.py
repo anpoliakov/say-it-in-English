@@ -1,38 +1,40 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
-from db import engine, Base
-from routers import words, users
-import storage
-from settings import settings
+from storage import get_storage
+from words.router import router as words_router
+from users.router import router as users_router
+from game.router import router as game_router
+from core.config import settings
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # Ensure MinIO bucket exists
-    storage.ensure_bucket()
+    # Ensure storage bucket is ready on startup
+    get_storage().ensure_bucket()
     yield
+
 
 app = FastAPI(
     title="Say it in English API",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # в проде сузить до домена
+    allow_origins=["*"],  # в проде сузить до домена
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(words.router, prefix="/api")
-app.include_router(users.router, prefix="/api")
+app.include_router(words_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
+app.include_router(game_router, prefix="/api")
 
-@app.get("/health")
+
+@app.get("/health", tags=["system"])
 async def health():
     return {"status": "ok", "dev_mode": settings.dev_mode}
