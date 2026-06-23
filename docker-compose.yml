@@ -53,6 +53,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET}
       SECRET_KEY: ${SECRET_KEY}
       DEV_MODE: ${DEV_MODE}
+      TRANSLATE_API_URL: ${TRANSLATE_API_URL}
     depends_on:
       postgres:
         condition: service_healthy

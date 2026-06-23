@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     secret_key: str
     dev_mode: bool = True
     telegram_bot_token: str = ""
+    translate_api_url: str = ""
 
     class Config:
         env_file = ".env"

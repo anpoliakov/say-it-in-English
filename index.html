@@ -720,6 +720,30 @@ document.getElementById('inputEn').addEventListener('keydown',e=>{if(e.key==='En
 document.getElementById('inputRu').addEventListener('keydown',e=>{if(e.key==='Enter')addWord();});
 
 // ═══════════════════════════════════════════
+//  AUTO-TRANSLATE
+// ═══════════════════════════════════════════
+let _translateTimer=null;
+async function autoTranslate(text){
+  if(!text||text.length<2)return;
+  const ruInput=document.getElementById('inputRu');
+  if(ruInput.value.trim())return;
+  ruInput.placeholder='Translating…';
+  try{
+    const resp=await fetch(`/api/translate?text=${encodeURIComponent(text)}`);
+    if(!resp.ok)return;
+    const data=await resp.json();
+    if(data.translation&&!ruInput.value.trim())ruInput.value=data.translation;
+  }catch(e){}
+  finally{ruInput.placeholder='e.g. красивый';}
+}
+document.getElementById('inputEn').addEventListener('input',function(){
+  clearTimeout(_translateTimer);
+  const text=this.value.trim();
+  if(text.length<2)return;
+  _translateTimer=setTimeout(()=>autoTranslate(text),400);
+});
+
+// ═══════════════════════════════════════════
 //  REVIEW
 // ═══════════════════════════════════════════
 let reviewQueue=[], reviewIndex=0, reviewKnow=0, reviewAgain=0, reviewRevealed=false;

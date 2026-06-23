@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from db import engine, Base
-from routers import words, users
+from routers import words, users, translate
 import storage
 from settings import settings
 
@@ -32,6 +32,7 @@ app.add_middleware(
 
 app.include_router(words.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(translate.router, prefix="/api")
 
 @app.get("/health")
 async def health():
